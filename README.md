@@ -6,4 +6,6 @@ A C++ class for drawing pictures of and animating zooms into the Mandelbrot set 
 g++ -o mandelbrot mandelbrot.cpp -std=c++11 -pthread
 ```
 
-I have also included a Python file which does the same job but isn't quite so robust.
+I have also included an example file which demonstrates how you might use the class to create your own zooms into the fractal.
+
+There is also a Python file which does the same job but in serial and significantly more slowly.

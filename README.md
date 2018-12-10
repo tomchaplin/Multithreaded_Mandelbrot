@@ -12,4 +12,4 @@ g++ -o example example.o -std=c++11 -pthread
 
 I have also included an example file which demonstrates how you might use the class to create your own zooms into the fractal.
 
-There is also a Python file which does the same job but in serial and significantly more slowly.
+There is also a Python file which implements the histogram colouring algorithm in a serial fashion. Obviously, this is much slower but is arguably more readoble.

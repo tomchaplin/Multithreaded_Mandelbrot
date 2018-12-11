@@ -10,6 +10,6 @@ g++ -o example example.o -std=c++11 -pthread
 ./example
 ```
 
-I have also included an example file which demonstrates how you might use the class to create your own zooms into the fractal.
+I have also included an example file which demonstrates how you might use the class to create your own zooms into the fractal. For information on what each function of the class does, please consult the Mandelbrot class header file.
 
 There is also a Python file which implements the histogram colouring algorithm in a serial fashion. Obviously, this is much slower but is useful for understanding the main algorithm for computing the Mandelbrot set.

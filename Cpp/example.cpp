@@ -37,20 +37,26 @@ int main(void) {
 
     // Main loop
     for(int i = 0; i < timeSteps; i++) {
+        // Reset center and width of image
         mandel->setCentre(currentX, currentY);
         mandel->setWidth(currentWidth);
+        // Compute escape times for each pixel
         mandel->iterate(max_iterations,escape_radius,num_threads);
+        // Colour image in according to specified algorithm
         mandel->colourFrame(palette,palette_size);
+        // Write image to file
         mandel->writeFrame(&writer,delay);
+        // Stop at the start for a second
         if(i== 0) {
-            // Stop at the start for a second
             for(int j=0; j<10; j++) {
                 mandel->writeFrame(&writer,delay);
             }
         }
         std::cout << timeSteps - i - 1 << " frames left" << std::endl;
+        // Adjust the point to follow straight line path
         currentX += xShift;
         currentY += yShift;
+        // Adjust width of image to zoom in
         currentWidth = currentWidth / zoomFactor;
     }
 

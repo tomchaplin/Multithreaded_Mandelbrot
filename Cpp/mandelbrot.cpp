@@ -6,13 +6,16 @@
 #include "mandelbrot.h"
 #include "ctpl_stl.h"
 #include "gif.h"
-
+#include "colours.h"
 
 const int Mandelbrot::NORMAL_COLOURING = 0;
 const int Mandelbrot::HISTOGRAM_COLOURING = 1;
 const int Mandelbrot::LOOP_COLOURING = 2;
 const int Mandelbrot::SMOOTH_HISTOGRAM_COLOURING = 3;
 const int Mandelbrot::SMOOTH_LOOP_COLOURING = 4;
+const int Mandelbrot::CIRCULAR_COLOURING = 5;
+const int Mandelbrot::HISTOGRAM_CIRCULAR_COLOURING = 6;
+const int Mandelbrot::SMOOTH_CIRCULAR_COLOURING = 7;
 
 Mandelbrot::Mandelbrot(int pw = 1280, int ph =720, double cw = 1.0, double x = 0.0, double y = 0.0) {
     pixelWidth = pw;
@@ -38,7 +41,7 @@ void Mandelbrot::iterate(int maxIter = 1000, double escapeRadius = 2.0, int NUM_
         x0 = startX;
         for(int j = 0; j< pixelWidth; j++) {
             x0 += step;
-            if(colour_mode == SMOOTH_LOOP_COLOURING or colour_mode == SMOOTH_HISTOGRAM_COLOURING) {
+            if(colour_mode == SMOOTH_LOOP_COLOURING or colour_mode == SMOOTH_HISTOGRAM_COLOURING or colour_mode == SMOOTH_CIRCULAR_COLOURING) {
                 p.push(Mandelbrot::logIteratePixel, iterationSpace, fracSpace, i * pixelWidth + j, x0, y0, maxIter, escapeRadius);
             } else {
                 p.push(Mandelbrot::iteratePixel, iterationSpace, i * pixelWidth + j, x0, y0, maxIter, escapeRadius);
@@ -185,6 +188,155 @@ void Mandelbrot::colourFrame(uint8_t *rgb_palette, int palette_size) {
             }
             break;
         }
+		case CIRCULAR_COLOURING:
+		{
+			// We select hue and saturation from the palette according to angle counter-clockwise from positive x-axis
+			// We select luminance according to iteration count
+			// First we convert our palette to HSL
+			double hsl_palette[palette_size * 3];
+			double hsl[3];
+			uint8_t rgb[3];
+			for(int i =0; i < palette_size; ++i){
+				rgb[0]=rgb_palette[i*3];
+				rgb[1]=rgb_palette[i*3+1];
+				rgb[2]=rgb_palette[i*3+2];
+				RGB_2_HSL(hsl,rgb);
+				hsl_palette[i*3]=hsl[0];
+				hsl_palette[i*3+1]=hsl[1];
+				hsl_palette[i*3+2]=hsl[2];
+			}
+			// Now we loop through our pixels
+			int colour_start;
+			double x, y, luminance;
+			for(int i=0; i < pixelWidth * pixelHeight; ++i){
+				// First we pull out colour from palette according to angle
+				y = startY - floor( i / pixelWidth) * step;
+				x = startX + i % pixelWidth * step;
+				colour_start = (int) floor(( (atan2(y,x) + M_PI) / (2 * M_PI) )* (palette_size-1)); 
+				// We figure out luminance based on iteration count
+				luminance = (double) iterationSpace[i] / (double) lastFrameMaxIter;
+				// Now we make our new colour
+				hsl[0]=hsl_palette[colour_start*3];
+				hsl[1]=hsl_palette[colour_start*3+1];
+				hsl[2]=luminance;
+				HSL_2_RGB(hsl,rgb);
+				//RGB_2_HSL(hsl,rgb);
+				//HSL_2_RGB(hsl,rgb);
+				// And finally colour in the pixel
+				// Red, green, blue channels
+				image[i*4] = rgb[0];
+				image[i*4+1] = rgb[1];
+				image[i*4+2] = rgb[2];
+				// Full alpha
+				image[i*4+3] = 255;
+			}
+			break;
+		}
+		case HISTOGRAM_CIRCULAR_COLOURING:
+		{
+			// First we convert our palette to HSL
+			double hsl_palette[palette_size * 3];
+			double hsl[3];
+			uint8_t rgb[3];
+			for(int i =0; i < palette_size; ++i){
+				rgb[0]=rgb_palette[i*3];
+				rgb[1]=rgb_palette[i*3+1];
+				rgb[2]=rgb_palette[i*3+2];
+				RGB_2_HSL(hsl,rgb);
+				hsl_palette[i*3]=hsl[0];
+				hsl_palette[i*3+1]=hsl[1];
+				hsl_palette[i*3+2]=hsl[2];
+			}
+            int total = pixelWidth * pixelHeight;
+            // Build the historgram
+            int histogram[lastFrameMaxIter + 1];
+            for(int i = 0; i<= lastFrameMaxIter; ++i) {
+                histogram[i] = 0;
+            }
+            for(int i = 0; i < total; i++) {
+                histogram[iterationSpace[i]]++;
+            }
+            // Figure out the luminance for each number of iterations
+        	double luminance[lastFrameMaxIter + 1];
+            luminance[0] = 0.0;
+            double previousProp = (double) histogram[0] / (double) total;
+            for(int i = 1; i <= lastFrameMaxIter; ++i) {
+                luminance[i] = previousProp;
+                previousProp = previousProp + (double) histogram[i] / (double) total;
+            }
+            // Go through each pixel and colour it in
+			int colour_angle;
+			double x,y;
+            for(int i = 0; i < total; ++i) {
+				y = startY - floor( i / pixelWidth) * step;
+				x = startX + i % pixelWidth * step;
+				colour_angle = (int) floor(( (atan2(y,x) + M_PI) / (2 * M_PI) )* (palette_size-1)); 
+				// We construct the colour
+				hsl[0]=hsl_palette[colour_angle*3];
+				hsl[1]=hsl_palette[colour_angle*3+1];
+				hsl[2]=luminance[iterationSpace[i]];
+				HSL_2_RGB(hsl,rgb);
+				//RGB_2_HSL(hsl,rgb);
+				//HSL_2_RGB(hsl,rgb);
+				// And finally colour in the pixel
+				// Red, green, blue channels
+				image[i*4] = rgb[0];
+				image[i*4+1] = rgb[1];
+				image[i*4+2] = rgb[2];
+                // Full Alpha
+                image[i*4 + 3] = 255;
+            }
+			break;
+		}
+		case SMOOTH_CIRCULAR_COLOURING:
+		{
+			// We select hue and saturation from the palette according to angle counter-clockwise from positive x-axis
+			// We select luminance according to iteration count
+			// First we convert our palette to HSL
+			double hsl_palette[palette_size * 3];
+			double hsl[3];
+			uint8_t rgb[3];
+			for(int i =0; i < palette_size; ++i){
+				rgb[0]=rgb_palette[i*3];
+				rgb[1]=rgb_palette[i*3+1];
+				rgb[2]=rgb_palette[i*3+2];
+				RGB_2_HSL(hsl,rgb);
+				hsl_palette[i*3]=hsl[0];
+				hsl_palette[i*3+1]=hsl[1];
+				hsl_palette[i*3+2]=hsl[2];
+			}
+			// Now we loop through our pixels
+			int colour_start;
+			double x, y, luminance, luminance_2, luminance_interpolated;
+			for(int i=0; i < pixelWidth * pixelHeight; ++i){
+				// First we pull out colour from palette according to angle
+				y = startY - floor( i / pixelWidth) * step;
+				x = startX + i % pixelWidth * step;
+				colour_start = (int) floor(( (atan2(y,x) + M_PI) / (2 * M_PI) )* (palette_size-1)); 
+				// We figure out luminance based on iteration count
+				luminance = (double) (iterationSpace[i]) / (double) lastFrameMaxIter;
+				luminance_2 = luminance + 1.0 / (double) lastFrameMaxIter ;
+				if (luminance_2 > 1.0) {
+					luminance_2 = 1.0;
+				}
+				luminance_interpolated = luminance + (luminance_2 - luminance) * fracSpace[i];
+				// Now we make our new colour
+				hsl[0]=hsl_palette[colour_start*3];
+				hsl[1]=hsl_palette[colour_start*3+1];
+				hsl[2]=luminance_interpolated;
+				HSL_2_RGB(hsl,rgb);
+				//RGB_2_HSL(hsl,rgb);
+				//HSL_2_RGB(hsl,rgb);
+				// And finally colour in the pixel
+				// Red, green, blue channels
+				image[i*4] = rgb[0];
+				image[i*4+1] = rgb[1];
+				image[i*4+2] = rgb[2];
+				// Full alpha
+				image[i*4+3] = 255;
+			}
+			break;
+		}
         default:
         {
             // Standard coloruing
@@ -208,7 +360,7 @@ void Mandelbrot::writeFrame(GifWriter *writer, uint32_t delay = 0) {
 
 void Mandelbrot::setColourMode(int mode){
     colour_mode = mode;
-    if(mode == SMOOTH_LOOP_COLOURING or mode == SMOOTH_HISTOGRAM_COLOURING) {
+    if(mode == SMOOTH_LOOP_COLOURING or mode == SMOOTH_HISTOGRAM_COLOURING or mode == SMOOTH_CIRCULAR_COLOURING) {
         fracSpace = new double[pixelWidth*pixelHeight];
     }
 }

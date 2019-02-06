@@ -2,38 +2,39 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "mandelbrot.cpp"
+#include "mandelbrot.h"
 #include "gif.h"
 #include "palette.h"
 
 int main(void) {
     // Mandelbrot iteraions paramaters
-    const int max_iterations = 2000;
+    const int max_iterations = 100;
     const double escape_radius = 2.0 * 1000000.0;
     // GIF creation parameters
     const int delay = 10;
-    const char *filename = "outputs/histo_smooth_colouring26.gif";
-    const int gifWidth = 1920;
-    const int gifHeight = 1080;
+    const char *filename = "outputs/circular_test18";
+    const int gifWidth = 2560*2;
+    const int gifHeight = 1440*2;
     GifWriter writer;
     GifBegin(&writer, filename,gifWidth,gifHeight,delay);
     // Multithreading parameters
-    const int num_threads = 8;
+    const int num_threads = 4;
     // Path taken
-    const int timeSteps = 240;
+    const int timeSteps = 1;
     const double zoomFactor = 1.06;
     const double xShift = 0.0;
     const double yShift = 0.0;
-    double currentX = -0.13753002464788744;
-    double currentY = 1.0148482188967138;
-    double currentWidth = 1.0;
+    double currentX = -0.75;
+    double currentY = 0.0;
+    double currentWidth = 3.75;
     // Fetch our palette
-    uint8_t palette[135*3];
-    getPaletteOne(palette);
-    int palette_size = 135;
+	// One is nicest
+    uint8_t palette[360*3];
+    getPaletteSix(palette);
+    int palette_size = 360;
     // Create mandelbrot and set colour mode
     Mandelbrot *mandel = new Mandelbrot(gifWidth,gifHeight,currentWidth,currentX,currentY);
-    mandel->setColourMode(Mandelbrot::SMOOTH_HISTOGRAM_COLOURING);
+    mandel->setColourMode(Mandelbrot::SMOOTH_CIRCULAR_COLOURING);
 
     // Main loop
     for(int i = 0; i < timeSteps; i++) {

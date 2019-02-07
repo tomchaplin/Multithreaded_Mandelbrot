@@ -20,7 +20,7 @@ I have implemented a number of colouring algorithms which all take in a palette:
 * Histogram circular colouring
 * Smooth circular colouring
 
-I have include a number of functions that create some palettes for you to experiment with but this is by no means necessary. Palettes should be passed in a `uint_t` array of RGB colours.
+I have include a number of functions that create some palettes for you to experiment with but this is by no means necessary. Palettes should be passed in a `uint8_t` array of RGB colours.
 
 I have also included an example file which demonstrates how you might use the class to create your own zooms into the fractal. To use this just run 
 

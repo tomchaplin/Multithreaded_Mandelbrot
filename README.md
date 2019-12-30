@@ -35,3 +35,8 @@ and the output gif should turn up in the outpts folder.
 For information on what each function of the class does, please consult the Mandelbrot class header file.
 
 There is also a Python file which implements the histogram colouring algorithm in a serial fashion. Obviously, this is much slower but is useful for understanding the main algorithm for computing the Mandelbrot set.
+
+## New Repo
+
+I am now working on implementing these ideas using MPI and C so that I can use a Raspberry Pi cluster to compute Mandelbrot zooms.
+The code is available in [this repo](https://github.com/tomchaplin/MPI_Mandelbrot).
